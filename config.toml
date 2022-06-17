@@ -1,0 +1,25 @@
+# Global upload config
+
+# Put your TMP.LINK upload token here. DO NOT push the actual token to any public repository!
+token = ""  
+# The TMP.LINK folder token, if you are uploading to within a shared folder. 
+# Leaving this empty will upload the files to "Stream"
+mrid = ""   
+# TMP.LINK API url. (You should not need to change this)
+post_url = "https://connect.tmp.link/api_v2/cli_uploader"
+
+# Room-specific config. Will overwrite the corresponding global config
+# Copy and edit the following section with header [room_{roomid}] if you have more rooms to record.
+# First room
+[room_1]
+# Room ID of the Bilibili Live Room
+room_id = ""
+# Room-specific upload folder token
+mrid = ""
+
+# Second room
+[room_2]
+# Room ID of the Bilibili Live Room
+room_id = ""
+# Room-specific upload folder token
+mrid = ""
