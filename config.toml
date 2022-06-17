@@ -12,14 +12,10 @@ post_url = "https://connect.tmp.link/api_v2/cli_uploader"
 # Copy and edit the following section with header [room_{roomid}] if you have more rooms to record.
 # First room
 [room_1]
-# Room ID of the Bilibili Live Room
-room_id = ""
 # Room-specific upload folder token
 mrid = ""
 
 # Second room
 [room_2]
-# Room ID of the Bilibili Live Room
-room_id = ""
 # Room-specific upload folder token
 mrid = ""
