@@ -1,5 +1,5 @@
 # Global upload config
-
+[global]
 # Put your TMP.LINK upload token here. DO NOT push the actual token to any public repository!
 token = ""  
 # The TMP.LINK folder token, if you are uploading to within a shared folder. 
