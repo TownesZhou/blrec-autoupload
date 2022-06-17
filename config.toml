@@ -10,6 +10,7 @@ post_url = "https://connect.tmp.link/api_v2/cli_uploader"
 
 # Room-specific config. Will overwrite the corresponding global config
 # Copy and edit the following section with header [room_{roomid}] if you have more rooms to record.
+# Note that the roomid here is the Bilibili Live Room ID. 
 # First room
 [room_1]
 # Room-specific upload folder token
