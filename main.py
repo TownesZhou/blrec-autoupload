@@ -20,8 +20,7 @@ def respond():
         return
 
     # Sanity check: the request should be a JSON object.
-    logging.info("\n")
-    logging.info("Received a new request request.")
+    logging.info("Received a new request.")
     if not request.is_json:
         logging.error("The request is not a JSON object.")
         return Response(status=400)
@@ -36,9 +35,10 @@ def respond():
     date = request.json['date']
     type = request.json['type']
     data = request.json['data']
-    logging.info(f"\tID: {id}")
-    logging.info(f"\tDATE: {date}")
-    logging.info(f"\tTYPE: {type}")
+    logging.info(f"Request type is: {type}")
+    logging.debug(f"\tID: {id}")
+    logging.debug(f"\tDATE: {date}")
+    logging.debug(f"\tTYPE: {type}")
     # Only proceed if the event type is VideoPostprocessingCompletedEvent.
     if type != 'VideoPostprocessingCompletedEvent':
         logging.info(f"The event type is not VideoPostprocessingCompletedEvent. Skipping.")
@@ -47,8 +47,8 @@ def respond():
     # Get room_id and path of the video file.
     room_id = data['room_id']
     path = data['path']
-    logging.info(f"\tROOM_ID: {room_id}")
-    logging.info(f"\tPATH: {path}")
+    logging.debug(f"\tROOM_ID: {room_id}")
+    logging.debug(f"\tPATH: {path}")
 
     # Get the file name and its dir
     filename = os.path.basename(path)
@@ -71,8 +71,7 @@ def respond():
     # Upload files to TMPLINK using CLI command.
     # Get room config
     room_config = app.config['ROOM_CONFIG']
-    logging.info("\n")
-    logging.info(f"The config for room {room_id} is: {room_config}")
+    logging.debug(f"The config for room {room_id} is: {room_config}")
 
     # Check that the room_id is one of the rooms in the config. 
     if room_id not in room_config:
@@ -93,8 +92,8 @@ def respond():
             cmd = f"curl -k -F \"file=@{path}\" -F \"token={token}\" -F \"model=2\" -F \"mrid={mrid}\" \-X POST \"{post_url}\" > {f.name}"
         else:
             cmd = f"curl -k -F \"file=@{path}\" -F \"token={token}\" -F \"model=2\" -X POST \"{post_url}\" > {f.name}"
-        logging.info("\n")
-        logging.info(f"Upload video file. Executing command: {cmd}")
+        logging.info(f"Uploading the video file: {filename}")
+        logging.debug(f"Executing command: {cmd}")
         subprocess.call(cmd, shell=True)
         logging.info("Uploaded the video file.")
         # If there is a Danmu file, upload it as well.
@@ -103,8 +102,8 @@ def respond():
                 cmd = f"curl -k -F \"file=@{danmu_path}\" -F \"token={token}\" -F \"model=2\" -F \"mrid={mrid}\" -X POST \"{post_url}\" > {f.name}"
             else:
                 cmd = f"curl -k -F \"file=@{danmu_path}\" -F \"token={token}\" -F \"model=2\" -X POST \"{post_url}\" > {f.name}"
-            logging.info("\n")
-            logging.info(f"Danmu file found. Upload the Danmu file. Executing command: {cmd}")
+            logging.info(f"Danmu file found. Uploading the Danmu file: {os.path.basename(danmu_path)}.")
+            logging.debug(f"Executing command: {cmd}")
             subprocess.call(cmd, shell=True)
             logging.info("Uploaded the Danmu file.")
 
@@ -126,8 +125,9 @@ if __name__ == '__main__':
     app.config['ROOM_CONFIG'] = room_config
 
     # Config logging.
+    log_level_numeric = getattr(logging, config['app']['log_level'], "INFO")  # Defalt to INFO is not found. 
     logging.basicConfig(
-        level=logging.INFO,  # Set logging level to INFO.
+        level=log_level_numeric,  # Set logging level.
         format='[%(asctime)s] [%(levelname)s] %(message)s'  # Display time and level.
     )
     # Start server.
