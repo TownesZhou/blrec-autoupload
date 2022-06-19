@@ -37,8 +37,8 @@ def upload_video(video_path, danmu_path, token, mrid, post_url):
 
         
     # If there is a Danmu file, upload it as well.
-    with tempfile.NamedTemporaryFile() as f:
-        if os.path.isfile(danmu_path):
+    if os.path.isfile(danmu_path):
+        with tempfile.NamedTemporaryFile() as f:
             if mrid != "":
                 cmd = f"curl -k -F \"file=@{danmu_path}\" -F \"token={token}\" -F \"model=2\" -F \"mrid={mrid}\" -X POST \"{post_url}\" > {f.name}"
             else:
