@@ -130,3 +130,6 @@ dmypy.json
 
 # Test data
 test_data/
+
+# Ignore config file. Already provided and template and don't want to accidentally commit tokens. 
+config.toml
