@@ -3,12 +3,40 @@
 """
 import os
 import subprocess
+from threading import Thread
 import toml
 import tempfile
 import logging
 from flask import Flask, request, Response
 
 app = Flask(__name__)
+
+
+# File uploading to be initiated in another thread after returning 200 in the respond() method.
+def upload_video(video_path, danmu_path, token, mrid, post_url):
+    # Use subprocess to call the CLI command.
+    # The command with mrid is: curl -k -F "file=@{file path}" -F "token={token}" -F "model=2" -F "mrid={mrid}" -X POST "{post_url}"
+    # The command without mrid is: curl -k -F "file=@{file path}" -F "token={token}" -F "model=2" -X POST "{post_url}"
+    # Use a temporary file to redirect curl's output so the progress bar can be seen in the terminal.
+    with tempfile.NamedTemporaryFile() as f:
+        if mrid != "":
+            cmd = f"curl -k -F \"file=@{video_path}\" -F \"token={token}\" -F \"model=2\" -F \"mrid={mrid}\" \-X POST \"{post_url}\" > {f.name}"
+        else:
+            cmd = f"curl -k -F \"file=@{video_path}\" -F \"token={token}\" -F \"model=2\" -X POST \"{post_url}\" > {f.name}"
+        logging.info(f"Uploading the video file: {os.path.basename(video_path)}")
+        logging.debug(f"Executing command: {cmd}")
+        subprocess.call(cmd, shell=True)
+        logging.info("Uploaded the video file.")
+        # If there is a Danmu file, upload it as well.
+        if os.path.isfile(danmu_path):
+            if mrid != "":
+                cmd = f"curl -k -F \"file=@{danmu_path}\" -F \"token={token}\" -F \"model=2\" -F \"mrid={mrid}\" -X POST \"{post_url}\" > {f.name}"
+            else:
+                cmd = f"curl -k -F \"file=@{danmu_path}\" -F \"token={token}\" -F \"model=2\" -X POST \"{post_url}\" > {f.name}"
+            logging.info(f"Danmu file found. Uploading the Danmu file: {os.path.basename(danmu_path)}.")
+            logging.debug(f"Executing command: {cmd}")
+            subprocess.call(cmd, shell=True)
+            logging.info("Uploaded the Danmu file.")
 
 # The method that listens to POST webhook requests. 
 @app.route('/blrec-autoupload', methods=['POST'])
@@ -42,7 +70,7 @@ def respond():
     # Only proceed if the event type is VideoPostprocessingCompletedEvent.
     if type != 'VideoPostprocessingCompletedEvent':
         logging.info(f"The event type is not VideoPostprocessingCompletedEvent. Skipping.")
-        return Response(status=200)
+        return Response(status=400)
     
     # Get room_id and path of the video file.
     room_id = data['room_id']
@@ -56,11 +84,11 @@ def respond():
     # Sanity check: the file should be a mp4 file.
     if not filename.endswith('.mp4'):
         logging.error(f"The file is not a mp4 file. Skipping.")
-        return Response(status=200)
+        return Response(status=400)
     # Sanity check: the file should indeed exist.
     if not os.path.isfile(path):
         logging.error(f"The file does not exist. Skipping.")
-        return Response(status=200)
+        return Response(status=400)
 
     # Check if there is a Danmu file with the same name and ends with .xml.
     danmu_path = os.path.join(dir, filename[:-4] + '.xml')
@@ -76,38 +104,20 @@ def respond():
     # Check that the room_id is one of the rooms in the config. 
     if room_id not in room_config:
         logging.error(f"The room_id {room_id} is not in the config. Skipping.")
-        return Response(status=200)
+        return Response(status=400)
     
     # Get token, mrid, API post url from the room config
     token = room_config[room_id]['token']
     mrid = room_config[room_id]['mrid']
     post_url = room_config[room_id]['post_url']
 
-    # Use subprocess to call the CLI command.
-    # The command with mrid is: curl -k -F "file=@{file path}" -F "token={token}" -F "model=2" -F "mrid={mrid}" -X POST "{post_url}"
-    # The command without mrid is: curl -k -F "file=@{file path}" -F "token={token}" -F "model=2" -X POST "{post_url}"
-    # Use a temporary file to redirect curl's output so the progress bar can be seen in the terminal.
-    with tempfile.NamedTemporaryFile() as f:
-        if mrid != "":
-            cmd = f"curl -k -F \"file=@{path}\" -F \"token={token}\" -F \"model=2\" -F \"mrid={mrid}\" \-X POST \"{post_url}\" > {f.name}"
-        else:
-            cmd = f"curl -k -F \"file=@{path}\" -F \"token={token}\" -F \"model=2\" -X POST \"{post_url}\" > {f.name}"
-        logging.info(f"Uploading the video file: {filename}")
-        logging.debug(f"Executing command: {cmd}")
-        subprocess.call(cmd, shell=True)
-        logging.info("Uploaded the video file.")
-        # If there is a Danmu file, upload it as well.
-        if os.path.isfile(danmu_path):
-            if mrid != "":
-                cmd = f"curl -k -F \"file=@{danmu_path}\" -F \"token={token}\" -F \"model=2\" -F \"mrid={mrid}\" -X POST \"{post_url}\" > {f.name}"
-            else:
-                cmd = f"curl -k -F \"file=@{danmu_path}\" -F \"token={token}\" -F \"model=2\" -X POST \"{post_url}\" > {f.name}"
-            logging.info(f"Danmu file found. Uploading the Danmu file: {os.path.basename(danmu_path)}.")
-            logging.debug(f"Executing command: {cmd}")
-            subprocess.call(cmd, shell=True)
-            logging.info("Uploaded the Danmu file.")
+    # Everything is OK. Respond with 200 OK and start uploading.
+    logging.info(f"Everything is OK. Starting uploading.")
 
-
+    # Upload the video file with another thread.
+    thread = Thread(target=upload_video, args=(path, danmu_path, token, mrid, post_url))
+    thread.start()
+    
     return Response(status=200)
 
 
