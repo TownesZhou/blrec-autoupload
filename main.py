@@ -125,7 +125,10 @@ if __name__ == '__main__':
     # Save the room config in the Flask app's config dict so we can access it in the respond() method.
     app.config['ROOM_CONFIG'] = room_config
 
-    # Set the logging level to INFO.
-    logging.basicConfig(level=logging.INFO)
+    # Config logging.
+    logging.basicConfig(
+        level=logging.INFO,  # Set logging level to INFO.
+        format='[%(asctime)s] [%(levelname)s] %(message)s'  # Display time and level.
+    )
     # Start server.
     app.run()
