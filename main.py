@@ -1,6 +1,7 @@
 """
     Listen to the BLREC Webhook and upload the recoding video files to TMPLINK.
 """
+from cmath import log
 import os
 import subprocess
 from threading import Thread
@@ -25,9 +26,18 @@ def upload_video(video_path, danmu_path, token, mrid, post_url):
             cmd = f"curl -k -F \"file=@{video_path}\" -F \"token={token}\" -F \"model=2\" -X POST \"{post_url}\" > {f.name}"
         logging.info(f"Uploading the video file: {os.path.basename(video_path)}")
         logging.debug(f"Executing command: {cmd}")
-        subprocess.call(cmd, shell=True)
-        logging.info("Uploaded the video file.")
-        # If there is a Danmu file, upload it as well.
+        
+        complete_status = subprocess.call(cmd, shell=True)
+        if complete_status == 0:
+            logging.info("Successfully uploaded the video file.")
+            logging.info(f"Response from the TMP server: \n{f.read().decode('utf-8')}")
+        else:
+            logging.error(f"Upload process failed with return code: {complete_status}")
+            logging.error(f"Piped Output: \n{f.read().decode('utf-8')}")
+
+        
+    # If there is a Danmu file, upload it as well.
+    with tempfile.NamedTemporaryFile() as f:
         if os.path.isfile(danmu_path):
             if mrid != "":
                 cmd = f"curl -k -F \"file=@{danmu_path}\" -F \"token={token}\" -F \"model=2\" -F \"mrid={mrid}\" -X POST \"{post_url}\" > {f.name}"
@@ -35,8 +45,15 @@ def upload_video(video_path, danmu_path, token, mrid, post_url):
                 cmd = f"curl -k -F \"file=@{danmu_path}\" -F \"token={token}\" -F \"model=2\" -X POST \"{post_url}\" > {f.name}"
             logging.info(f"Danmu file found. Uploading the Danmu file: {os.path.basename(danmu_path)}.")
             logging.debug(f"Executing command: {cmd}")
-            subprocess.call(cmd, shell=True)
-            logging.info("Uploaded the Danmu file.")
+            
+            complete_status = subprocess.call(cmd, shell=True)
+            if complete_status == 0:
+                logging.info("Successfully uploaded the Danmu file.")
+                logging.info(f"Response from the TMP server: \n{f.read().decode('utf-8')}")
+            else:
+                logging.error(f"Upload process failed with return code: {complete_status}")
+                logging.error(f"Piped Output: \n{f.read().decode('utf-8')}")
+            
 
 # The method that listens to POST webhook requests. 
 @app.route('/blrec-autoupload', methods=['POST'])
