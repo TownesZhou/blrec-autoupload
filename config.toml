@@ -1,3 +1,8 @@
+# Script setting
+[app]
+# Logging level
+log_level = "INFO"
+
 # Global upload config
 [global]
 # Put your TMP.LINK upload token here. DO NOT push the actual token to any public repository!
