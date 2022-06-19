@@ -1,7 +1,6 @@
 """
     Listen to the BLREC Webhook and upload the recoding video files to TMPLINK.
 """
-from cmath import log
 import os
 import subprocess
 from threading import Thread
